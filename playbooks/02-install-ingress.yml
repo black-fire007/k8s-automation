@@ -1,4 +1,4 @@
----
+
 - name: Install Nginx Ingress Controller
   hosts: all
   become: yes

@@ -3,7 +3,6 @@
 #     state: present
 #     definition: "{{ lookup('template', 'roles/dashboard/templates/dashboard-ingress.yaml.j2') }}"
 
----
 - name: Deploy Kubernetes Dashboard
   kubernetes.core.k8s:
     state: present

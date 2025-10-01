@@ -4,7 +4,6 @@
 #     definition: "{{ lookup('template', 'roles/certmanager/templates/cluster-issuer.yaml.j2') }}"
 
 
----
 - name: Apply ClusterIssuer for cert-manager
   template:
     src: cluster-issuer.yaml.j2

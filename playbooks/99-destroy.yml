@@ -1,4 +1,4 @@
----
+
 - name: Destroy all worker nodes
   hosts: localhost
   gather_facts: no

@@ -2,8 +2,7 @@
 #   kubernetes.core.k8s:
 #     state: present
 #     definition: "{{ lookup('template', 'roles/argocd/templates/argocd-ingress.yaml.j2') }}"
----
----
+
 - name: Deploy ArgoCD
   kubernetes.core.k8s:
     state: present
