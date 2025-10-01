@@ -1,8 +1,8 @@
 ansible_python_interpreter: /usr/bin/python3
-cloud_credentials_file: "/home/pisethkhon888/k8s-ha-cluster/credentials/service.account.json"
+cloud_credentials_file: "/home/pisethkhon888/k8s/credentials/service.account.json"
 ssh_public_key_file: "/home/pisethkhon888/.ssh/id_rsa.pub"
 ssh_private_key_file: "/home/pisethkhon888/.ssh/id_rsa"
-ansible_user: ubuntu
+ansible_user: pisethkhon888
 google_project_id: "stone-victor-466807-s7"
 
 
@@ -11,3 +11,39 @@ google_project_id: "stone-victor-466807-s7"
 # service_account_path: credentials/service.account.json
 # google_project_id: <YOUR_GCP_PROJECT_ID>
 agent_user: ubuntu
+
+kube_version: v1.28.0
+kube_network_plugin: calico
+
+dashboard_domain: k8s-dashboard.sethnexusonline.online
+argocd_domain: argocd.sethnexusonline.online
+
+machine_specs:
+  large: { machine_type: "e2-standard-2", zone: "asia-southeast1-b", disk_size: 50, disk_type: "pd-standard" }
+  medium: { machine_type: "e2-medium", zone: "asia-southeast1-b", disk_size: 50, disk_type: "pd-standard" }
+
+ubuntu_specs:
+  v22: { image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts" }
+  v24: { image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-2404-lts" }
+
+machines_info:
+  - name: node1
+    machine_type: "{{ machine_specs.medium.machine_type }}"
+    zone: "asia-east2-b"
+    image: "{{ ubuntu_specs.v22.image }}"
+    disk_size: "{{ machine_specs.medium.disk_size }}"
+    disk_type: "{{ machine_specs.medium.disk_type }}"
+
+  - name: node2
+    machine_type: "{{ machine_specs.medium.machine_type }}"
+    zone: "asia-east2-b"
+    image: "{{ ubuntu_specs.v22.image }}"
+    disk_size: "{{ machine_specs.medium.disk_size }}"
+    disk_type: "{{ machine_specs.medium.disk_type }}"
+
+  - name: node3
+    machine_type: "{{ machine_specs.medium.machine_type }}"
+    zone: "asia-east2-b"
+    image: "{{ ubuntu_specs.v22.image }}"
+    disk_size: "{{ machine_specs.medium.disk_size }}"
+    disk_type: "{{ machine_specs.medium.disk_type }}"

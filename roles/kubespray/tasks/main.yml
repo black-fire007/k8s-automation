@@ -1,23 +1,34 @@
-- name: Clone Kubespray
+---
+- name: Ensure ~/kubespray directory exists
+  file:
+    path: ~/kubespray
+    state: directory
+    mode: '0755'
+
+- name: Remove old Kubespray repo if exists
+  file:
+    path: ~/kubespray
+    state: absent
+
+- name: Clone Kubespray repository
   git:
     repo: https://github.com/kubernetes-sigs/kubespray.git
     dest: ~/kubespray
     version: master
 
-- name: Install Python dependencies
+- name: Install Python dependencies for Kubespray
   pip:
     requirements: ~/kubespray/requirements.txt
     executable: pip3
 
-- name: Generate Kubespray inventory
-  command: >
-    python3 ~/kubespray/contrib/inventory_builder/inventory.py
-    {{ groups['kube_nodes'] | join(' ') }}
-  args:
-    chdir: ~/kubespray
+- name: Ensure Kubespray inventory/mycluster directory exists
+  file:
+    path: ~/kubespray/inventory/mycluster
+    state: directory
+    mode: '0755'
 
-- name: Deploy HA Kubernetes cluster
-  command: >
-    ansible-playbook -i ~/kubespray/inventory/mycluster/hosts.yaml
-    --become --become-user=root
-    ~/kubespray/cluster.yml
+- name: Copy custom hosts.yaml to Kubespray inventory
+  copy:
+    src: /home/pisethkhon888/k8s/inventory/mycluster/hosts.yaml
+    dest: ~/kubespray/inventory/mycluster/hosts.yaml
+    remote_src: yes

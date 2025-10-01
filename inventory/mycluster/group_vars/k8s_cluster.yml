@@ -8,26 +8,51 @@
 #   - { name: node3, machine_type: n1-standard-1, zone: us-central1-a, image: debian-11, disk_size: 50, disk_type: pd-standard }
 
 
-kube_version: v1.28.0
-kube_network_plugin: calico
+# kube_version: v1.28.0
+# kube_network_plugin: calico
 
-dashboard_domain: k8s-dashboard.sethnexusonline.online
-argocd_domain: argocd.sethnexusonline.online
+# dashboard_domain: k8s-dashboard.sethnexusonline.online
+# argocd_domain: argocd.sethnexusonline.online
 
 # google_project_id: "stone-victor-466807-s7"
 # ssh_pubkey_path: "/home/pisethkhon888/.ssh/id_rsa.pub"
 # agent_user: "pisethkhon888"
 # service_account_path: "/home/pisethkhon888/credentials/service-account.json"
 
-machine_specs:
-  large: { machine_type: "e2-standard-2", zone: "asia-southeast1-b", disk_size: 50, disk_type: "pd-standard" }
-  medium: { machine_type: "e2-medium", zone: "asia-southeast1-b", disk_size: 50, disk_type: "pd-standard" }
 
-ubuntu_specs:
-  v22: { image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts" }
-  v24: { image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-2404-lts" }
+###
+# machine_specs:
+#   large: { machine_type: "e2-standard-2", zone: "asia-southeast1-b", disk_size: 50, disk_type: "pd-standard" }
+#   medium: { machine_type: "e2-medium", zone: "asia-southeast1-b", disk_size: 50, disk_type: "pd-standard" }
 
-machines_info:
-  - { name: node1, machine_type: "{{ machine_specs.medium.machine_type }}", zone: asia-east2-b, image: "{{ ubuntu_specs.v22.image }}", disk_size: "{{ machine_specs.medium.disk_size }}", disk_type: "{{ machine_specs.medium.disk_type }}" }
-  - { name: node2, machine_type: "{{ machine_specs.medium.machine_type }}", zone: asia-east2-b, image: "{{ ubuntu_specs.v22.image }}", disk_size: "{{ machine_specs.medium.disk_size }}", disk_type: "{{ machine_specs.medium.disk_type }}" }
-  - { name: node3, machine_type: "{{ machine_specs.medium.machine_type }}", zone: asia-east2-b, image: "{{ ubuntu_specs.v22.image }}", disk_size: "{{ machine_specs.medium.disk_size }}", disk_type: "{{ machine_specs.medium.disk_type }}", service_account_path: "/home/pisethkhon888/credentials/service-account.json" }
+# ubuntu_specs:
+#   v22: { image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts" }
+#   v24: { image: "projects/ubuntu-os-cloud/global/images/family/ubuntu-2404-lts" }
+  ###
+
+# machines_info:
+#   - { name: node1, machine_type: "{{ machine_specs.medium.machine_type }}", zone: asia-east2-b, image: "{{ ubuntu_specs.v22.image }}", disk_size: "{{ machine_specs.medium.disk_size }}", disk_type: "{{ machine_specs.medium.disk_type }}" }
+#   - { name: node2, machine_type: "{{ machine_specs.medium.machine_type }}", zone: asia-east2-b, image: "{{ ubuntu_specs.v22.image }}", disk_size: "{{ machine_specs.medium.disk_size }}", disk_type: "{{ machine_specs.medium.disk_type }}" }
+#   - { name: node3, machine_type: "{{ machine_specs.medium.machine_type }}", zone: asia-east2-b, image: "{{ ubuntu_specs.v22.image }}", disk_size: "{{ machine_specs.medium.disk_size }}", disk_type: "{{ machine_specs.medium.disk_type }}", service_account_path: "/home/pisethkhon888/credentials/service-account.json" }
+
+# machines_info:
+#   - name: node1
+#     machine_type: "{{ machine_specs.medium.machine_type }}"
+#     zone: "asia-east2-b"
+#     image: "{{ ubuntu_specs.v22.image }}"
+#     disk_size: "{{ machine_specs.medium.disk_size }}"
+#     disk_type: "{{ machine_specs.medium.disk_type }}"
+
+#   - name: node2
+#     machine_type: "{{ machine_specs.medium.machine_type }}"
+#     zone: "asia-east2-b"
+#     image: "{{ ubuntu_specs.v22.image }}"
+#     disk_size: "{{ machine_specs.medium.disk_size }}"
+#     disk_type: "{{ machine_specs.medium.disk_type }}"
+
+#   - name: node3
+#     machine_type: "{{ machine_specs.medium.machine_type }}"
+#     zone: "asia-east2-b"
+#     image: "{{ ubuntu_specs.v22.image }}"
+#     disk_size: "{{ machine_specs.medium.disk_size }}"
+#     disk_type: "{{ machine_specs.medium.disk_type }}"

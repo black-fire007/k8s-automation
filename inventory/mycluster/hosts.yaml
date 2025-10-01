@@ -10,14 +10,21 @@
 #         node1:
 #         node2:
 #         node3:
+
 all:
   hosts:
     master1:
-      ansible_host: 10.148.0.14
+      ansible_host: 34.124.178.96 #internal_IP for master1
+    node1: {}
+    node2: {}
+    node3: {}
   children:
-    k8s_cluster:
+    kube_control_plane:
       hosts:
-        node1: {}
-        node2: {}
-        node3: {}
+        master1:
+    kube_nodes:
+      hosts:
+        node1:
+        node2:
+        node3:
 
