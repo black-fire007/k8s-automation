@@ -1,0 +1,6 @@
+- import_playbook: playbooks/00-provision-vms.yml
+- import_playbook: playbooks/01-create-cluster.yml
+- import_playbook: playbooks/02-install-ingress.yml
+- import_playbook: playbooks/03-deploy-dashboard.yml
+- import_playbook: playbooks/04-deploy-argocd.yml
+- import_playbook: playbooks/05-setup-cert.yml

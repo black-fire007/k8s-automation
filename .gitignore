@@ -1,0 +1,14 @@
+.vscode-server/
+*.log
+*.tmp
+node_modules/
+/home/pisethkhon888/credentials
+/home/pisethkhon888/k8s-auto/credentials
+# Ignore credentials folder or specific files
+# Example .gitignore
+*.json
+credentials/
+
+.env
+*.pem
+

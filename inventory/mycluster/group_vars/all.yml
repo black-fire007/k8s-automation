@@ -1,0 +1,13 @@
+ansible_python_interpreter: /usr/bin/python3
+cloud_credentials_file: "/home/pisethkhon888/k8s-ha-cluster/credentials/service.account.json"
+ssh_public_key_file: "/home/pisethkhon888/.ssh/id_rsa.pub"
+ssh_private_key_file: "/home/pisethkhon888/.ssh/id_rsa"
+ansible_user: ubuntu
+google_project_id: "stone-victor-466807-s7"
+
+
+# ansible_user: ubuntu
+# ssh_pubkey_path: /home/pisethkhon888/.ssh/id_rsa.pub
+# service_account_path: credentials/service.account.json
+# google_project_id: <YOUR_GCP_PROJECT_ID>
+agent_user: ubuntu

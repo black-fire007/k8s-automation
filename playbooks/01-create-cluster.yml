@@ -1,0 +1,6 @@
+---
+- name: Create HA Kubernetes cluster with Kubespray
+  hosts: localhost
+  gather_facts: no
+  roles:
+    - kubespray

@@ -1,0 +1,25 @@
+# all:
+#   hosts:
+#     master1:
+#       ansible_host: 34.124.178.96 #internal_IP for master1
+#       ansible_user: root
+#   children:
+#     kube_nodes:
+#       hosts:
+#         master1:
+#         node1:
+#         node2:
+#         node3:
+all:
+  hosts:
+    master1:
+      ansible_host: <MASTER1_IP>
+  children:
+    k8s_cluster:
+      hosts:
+        node1:
+          ansible_host: <NODE1_IP>
+        node2:
+          ansible_host: <NODE2_IP>
+        node3:
+          ansible_host: <NODE3_IP>

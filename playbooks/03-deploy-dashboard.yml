@@ -1,0 +1,6 @@
+---
+- name: Deploy Kubernetes Dashboard
+  hosts: all
+  become: yes
+  roles:
+    - dashboard
