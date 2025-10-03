@@ -1,34 +1,408 @@
----
-- name: Ensure ~/kubespray directory exists
-  file:
-    path: ~/kubespray
-    state: directory
-    mode: '0755'
+# ---
+# # roles/kubespray/tasks/main.yml
 
-- name: Remove old Kubespray repo if exists
+# - name: Clone Kubespray
+#   git:
+#     repo: https://github.com/kubernetes-sigs/kubespray.git
+#     dest: /home/pisethkhon888/kubespray
+#     version: master
+
+# - name: Install Python dependencies for Kubespray
+#   pip:
+#     requirements: /home/pisethkhon888/kubespray/requirements.txt
+#     executable: pip3
+
+# # ---- Discover VM IPs ----
+# # (this assumes you already created VMs with Ansible/Terraform and have registered their IPs in variables)
+
+# - name: Wait for VMs to come online (SSH check)
+#   wait_for:
+#     host: "{{ item }}"
+#     port: 22
+#     timeout: 300
+#   loop:
+#     - "{{ hostvars['master1']['ansible_host'] | default('') }}"
+#     - "{{ hostvars['node1']['ansible_host'] | default('') }}"
+#     - "{{ hostvars['node2']['ansible_host'] | default('') }}"
+#     - "{{ hostvars['node3']['ansible_host'] | default('') }}"
+#   when: item != ""
+
+# # ---- Update Kubespray inventory ----
+# - name: Ensure inventory directory exists
+#   file:
+#     path: /home/pisethkhon888/kubespray/inventory/mycluster
+#     state: directory
+
+# - name: Copy base hosts.yaml to Kubespray inventory
+#   copy:
+#     src: /home/pisethkhon888/k8s/inventory/mycluster/hosts.yml
+#     dest: /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
+#     force: yes
+
+# - name: Inject SSH config into hosts.yaml
+#   lineinfile:
+#     path: /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
+#     insertafter: "{{ item.after }}"
+#     line: "{{ item.line }}"
+#   loop:
+#     - { after: "master1:", line: "      ansible_user: pisethkhon888" }
+#     - { after: "master1:", line: "      ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa" }
+#     - { after: "node1:", line: "      ansible_user: pisethkhon888" }
+#     - { after: "node1:", line: "      ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa" }
+#     - { after: "node2:", line: "      ansible_user: pisethkhon888" }
+#     - { after: "node2:", line: "      ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa" }
+#     - { after: "node3:", line: "      ansible_user: pisethkhon888" }
+#     - { after: "node3:", line: "      ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa" }
+
+# # ---- Deploy Cluster ----
+# - name: Deploy HA Kubernetes cluster with Kubespray
+#   command: >
+#     ansible-playbook -i /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
+#     --become --become-user=root
+#     /home/pisethkhon888/kubespray/cluster.yml
+#   args:
+#     chdir: /home/pisethkhon888/kubespray
+# roles/kubespray/tasks/main.yml
+---
+# roles/kubespray/tasks/main.yml
+
+# # 0️⃣ Remove old Kubespray if exists
+# - name: Remove old Kubespray directory
+#   file:
+#     path: /home/pisethkhon888/kubespray
+#     state: absent
+
+# # 1️⃣ Clone Kubespray
+# - name: Clone Kubespray
+#   git:
+#     repo: https://github.com/kubernetes-sigs/kubespray.git
+#     dest: /home/pisethkhon888/kubespray
+#     version: master
+#   ignore_errors: yes
+
+# # 2️⃣ Install Python dependencies
+# - name: Install Python dependencies for Kubespray
+#   pip:
+#     requirements: /home/pisethkhon888/kubespray/requirements.txt
+#     executable: pip3
+
+# # 3️⃣ Wait for SSH to master
+# - name: Wait for master SSH
+#   wait_for:
+#     host: "10.148.0.14"
+#     port: 22
+#     timeout: 300
+
+# # 4️⃣ Wait for SSH on worker nodes (use IPs from vms role)
+# - name: Wait for worker nodes SSH
+#   wait_for:
+#     host: "{{ item.instance.networkInterfaces[0].networkIP }}"
+#     port: 22
+#     timeout: 300
+#   loop: "{{ new_nodes.results }}"
+
+# # 5️⃣ Copy SSH keys to master
+# - name: Copy SSH keys to master
+#   authorized_key:
+#     user: pisethkhon888
+#     state: present
+#     key: "{{ lookup('file', '/home/pisethkhon888/.ssh/id_rsa.pub') }}"
+#   delegate_to: "10.148.0.14"
+
+# # 6️⃣ Copy SSH keys to worker nodes
+# - name: Copy SSH keys to worker nodes
+#   authorized_key:
+#     user: pisethkhon888
+#     state: present
+#     key: "{{ lookup('file', '/home/pisethkhon888/.ssh/id_rsa.pub') }}"
+#   loop: "{{ new_nodes.results }}"
+#   delegate_to: "{{ item.instance.networkInterfaces[0].networkIP }}"
+
+# # 7️⃣ Generate hosts.yaml dynamically
+# - name: Ensure inventory directory exists
+#   file:
+#     path: /home/pisethkhon888/kubespray/inventory/mycluster
+#     state: directory
+
+# - name: Generate hosts.yaml dynamically
+#   copy:
+#     dest: /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
+#     content: |
+#       all:
+#         hosts:
+#           master1:
+#             ansible_host: 10.148.0.14
+#             ansible_user: pisethkhon888
+#             ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa
+#           {% for node in new_nodes.results %}
+#           node{{ loop.index }}:
+#             ansible_host: {{ node.instance.networkInterfaces[0].networkIP }}
+#             ansible_user: pisethkhon888
+#             ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa
+#           {% endfor %}
+
+#         children:
+#           kube_control_plane:
+#             hosts:
+#               master1:
+#           kube_nodes:
+#             hosts:
+#               {% for node in new_nodes.results %}
+#               node{{ loop.index }}:
+#               {% endfor %}
+#           etcd:
+#             hosts:
+#               master1:
+#           k8s_cluster:
+#             children:
+#               kube_control_plane:
+#               kube_nodes:
+
+# # 8️⃣ Deploy Kubespray cluster
+# - name: Deploy HA Kubernetes cluster with Kubespray
+#   command: >
+#     ansible-playbook -i /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
+#     --become --become-user=root
+#     /home/pisethkhon888/kubespray/cluster.yml
+#   args:
+#     chdir: /home/pisethkhon888/kubespray
+
+
+# 0️⃣ Remove old Kubespray if exists
+- name: Remove old Kubespray directory
   file:
-    path: ~/kubespray
+    path: /home/pisethkhon888/kubespray
     state: absent
 
-- name: Clone Kubespray repository
+# 1️⃣ Clone Kubespray
+- name: Clone Kubespray
   git:
     repo: https://github.com/kubernetes-sigs/kubespray.git
-    dest: ~/kubespray
+    dest: /home/pisethkhon888/kubespray
     version: master
+  ignore_errors: yes
 
+# 2️⃣ Install Python dependencies
 - name: Install Python dependencies for Kubespray
   pip:
-    requirements: ~/kubespray/requirements.txt
+    requirements: /home/pisethkhon888/kubespray/requirements.txt
     executable: pip3
 
-- name: Ensure Kubespray inventory/mycluster directory exists
-  file:
-    path: ~/kubespray/inventory/mycluster
-    state: directory
-    mode: '0755'
 
-- name: Copy custom hosts.yaml to Kubespray inventory
-  copy:
-    src: /home/pisethkhon888/k8s/inventory/mycluster/hosts.yaml
-    dest: ~/kubespray/inventory/mycluster/hosts.yaml
-    remote_src: yes
+
+# 1️⃣ Get master instance info
+- name: Get master instance info
+  google.cloud.gcp_compute_instance_info:
+    project: "{{ project }}"
+    zone: "{{ zone }}"
+    auth_kind: serviceaccount
+    service_account_file: "{{ service_account_file }}"
+    filters:
+      - "name = {{ master_name }}"
+  register: master_info
+
+- name: Set master external IP
+  set_fact:
+    master_ip: "{{ master_info.resources[0].networkInterfaces[0].accessConfigs[0].natIP }}"
+
+# 2️⃣ Debug master_ip (optional)
+- name: Debug master_ip
+  debug:
+    var: master_ip
+
+# 3️⃣ Get worker instance info
+- name: Get worker instances info
+  google.cloud.gcp_compute_instance_info:
+    project: "{{ project }}"
+    zone: "{{ zone }}"
+    auth_kind: serviceaccount
+    service_account_file: "{{ service_account_file }}"
+    filters: >-
+      {% for w in worker_names %}
+      name = {{ w }}{% if not loop.last %} OR {% endif %}{% endfor %}
+  register: workers_info
+
+# 4️⃣ Extract worker IPs
+- name: Set worker external IPs
+  set_fact:
+    worker_ips: "{{ workers_info.resources
+                   | map(attribute='networkInterfaces')
+                   | map('first')
+                   | map(attribute='accessConfigs')
+                   | map('first')
+                   | map(attribute='natIP')
+                   | list }}"
+
+# 5️⃣ Debug
+- debug:
+    msg:
+      - "Master IP: {{ master_ip }}"
+      # - "Worker IPs: {{ node.networkInterfaces[0].networkIP }}"
+
+- name: Load GCP instance info
+  include_vars:
+    file: /home/pisethkhon888/k8s/gcp_instance.json
+    name: gcp_data
+
+# - name: Set master and worker facts
+#   set_fact:
+#     master: "{{ gcp_data.master }}"
+#     workers: "{{ gcp_data.workers }}"
+
+# - name: Debug loaded nodes
+#   debug:
+#     msg:
+#       - "Master IP: {{ master.internal_ip }}"
+#       - "Worker IPs: {{ workers | map(attribute='internal_ip') | list }}"
+
+- name: Ensure inventory directory exists
+  file:
+    path: /home/pisethkhon888/kubespray/inventory/mycluster
+    state: directory
+
+# 1️⃣ Load GCP instance data
+- name: Load worker nodes from JSON
+  include_vars:
+    file: /home/pisethkhon888/k8s/gcp_instance.json
+    name: gcp_data
+
+# 2️⃣ Set master and workers facts
+- name: Set master and worker facts
+  set_fact:
+    master:
+      name: master1
+      internal_ip: 10.148.0.14
+      external_ip: 34.124.178.96
+    workers: "{{ gcp_data.workers }}"
+
+# 3️⃣ Debug to confirm
+- name: Debug master
+  debug:
+    var: master
+
+- name: Debug workers
+  debug:
+    var: workers
+
+# 4️⃣ Generate dynamic hosts.yml safely
+- name: Generate dynamic hosts.yml
+  template:
+    src: /home/pisethkhon888/k8s/inventory/mycluster/hosts.yml.j2
+    dest: /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
+
+# 3️⃣ Refresh inventory from host.yml
+- name: Load host inventory
+  include_vars:
+    file: /home/pisethkhon888/k8s/inventory/mycluster/hosts.yml
+    name: inventory_data
+
+
+# 4️⃣ Collect worker node IPs from gcp_instance.json
+
+- name: Load worker IPs from JSON
+  include_vars:
+    file: /home/pisethkhon888/k8s/gcp_instance.json
+    name: gcp_data
+
+- name: Set worker IPs list
+  set_fact:
+    worker_ips: "{{ gcp_data.workers | map(attribute='internal_ip') | list }}"
+
+- name: Debug worker IPs
+  debug:
+    var: worker_ips
+
+# 1️⃣ Wait for master SSH
+- name: Wait for master SSH
+  wait_for:
+    host: "10.148.0.14"
+    port: 22
+    state: started
+    timeout: 300
+
+
+- name: Wait for worker SSH
+  wait_for:
+    host: "{{ item }}"
+    port: 22
+    state: started
+    timeout: 300
+  loop: "{{ worker_ips }}"
+
+# # 4️⃣ Copy SSH key to master
+# - name: Copy SSH key to master
+#   authorized_key:
+#     user: pisethkhon888
+#     state: present
+#     key: "{{ lookup('file', ssh_public_key_file) }}"
+#   delegate_to: "{{ master_ip }}"
+#   vars:
+#     ansible_ssh_private_key_file: "{{ ssh_private_key_file }}"
+
+    # 5️⃣ Copy SSH key to worker nodes
+- name: Copy SSH key to worker nodes
+  authorized_key:
+    user: pisethkhon888
+    state: present
+    key: "{{ lookup('file', ssh_public_key_file) }}"
+  loop: "{{ worker_ips }}"
+  delegate_to: "{{ item }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ ssh_private_key_file }}"
+
+# # 5️⃣ Ensure inventory directory exists
+# - name: Ensure inventory directory exists
+#   file:
+#     path: /home/pisethkhon888/kubespray/inventory/mycluster
+#     state: directory
+
+# - name: Generate hosts.yml dynamically
+#   copy:
+#     dest: /home/pisethkhon888/k8s/inventory/mycluster/hosts.yml
+#     content: |
+#       all:
+#         hosts:
+#           master1:
+#             ansible_host: {{ master_ip }}
+#             ansible_user: pisethkhon888
+#             ansible_ssh_private_key_file: {{ ssh_private_key_file }}
+#           {% for ip in worker_ips %}
+#           node{{ loop.index }}:
+#             ansible_host: {{ ip }}
+#             ansible_user: pisethkhon888
+#             ansible_ssh_private_key_file: {{ ssh_private_key_file }}
+#           {% endfor %}
+#         children:
+#           kube_control_plane:
+#             hosts:
+#               master1:
+#           kube_nodes:
+#             hosts:
+#               {% for ip in worker_ips %}
+#               node{{ loop.index }}:
+#               {% endfor %}
+#           etcd:
+#             hosts:
+#               master1:
+#           k8s_cluster:
+#             children:
+#               kube_control_plane:
+#               kube_nodes:
+
+
+# 7️⃣ Deploy Kubespray cluster
+# - name: Deploy HA Kubernetes cluster with Kubespray
+#   command: >
+#     ansible-playbook -i /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yaml
+#     --become --become-user=root
+#     /home/pisethkhon888/kubespray/cluster.yml
+#   args:
+#     chdir: /home/pisethkhon888/kubespray
+
+- name: Deploy HA Kubernetes cluster with Kubespray
+  command: >
+    ansible-playbook -i {{ inventory_file }}
+    --become --become-user=root
+    {{ kubespray_dir }}/cluster.yml
+  args:
+    chdir: "{{ kubespray_dir }}"

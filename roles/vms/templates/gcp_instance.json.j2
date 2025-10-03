@@ -1,0 +1,11 @@
+{
+  "workers": [
+  {% for node in created_workers.results %}
+    {
+      "name": "{{ node.item.name }}",
+      "internal_ip": "{{ node.networkInterfaces[0].networkIP }}",
+      "external_ip": "{{ node.networkInterfaces[0].accessConfigs[0].natIP }}"
+    }{% if not loop.last %},{% endif %}
+  {% endfor %}
+  ]
+}

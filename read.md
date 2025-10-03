@@ -1,7 +1,7 @@
 mkdir -p {inventory/mycluster/group_vars,playbooks,roles/vms/tasks,roles/kubespray/tasks,roles/ingress/tasks,roles/dashboard/tasks,roles/dashboard/templates,roles/argocd/tasks,roles/argocd/templates,roles/certmanager/tasks,roles/certmanager/templates,kubespray,credentials} && \
 touch ansible.cfg \
 site.yml \
-inventory/mycluster/hosts.yaml \
+inventory/mycluster/hosts.yml \
 inventory/mycluster/group_vars/all.yml \
 inventory/mycluster/group_vars/k8s_cluster.yml \
 playbooks/00-provision-vms.yml \

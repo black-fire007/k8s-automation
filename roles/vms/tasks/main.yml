@@ -1,6 +1,7 @@
 - name: Wait for master1 SSH to be ready
   wait_for:
-    host: "{{ hostvars['master1'].ansible_host }}"
+    # host: "{{ hostvars['master1'].ansible_host }}"
+    host: "10.148.0.14"
     port: 22
     state: started
     timeout: 300
@@ -49,3 +50,49 @@
         - https-server
   loop: "{{ machines_info }}"
   register: created_workers
+
+
+# 5️⃣ Wait for worker nodes SSH
+- name: Wait for worker nodes SSH
+  wait_for:
+    host: "{{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
+    port: 22
+    state: started
+    timeout: 300
+  loop: "{{ created_workers.results }}"
+
+- name: Save worker node IPs to gcp_instance.json
+  template:
+    src: gcp_instance.json.j2
+    dest: /home/pisethkhon888/k8s/gcp_instance.json
+  when: created_workers is defined
+
+# - name: Save worker node IPs to gcp_instance.json
+#   copy:
+#     dest: /home/pisethkhon888/k8s/gcp_instance.json
+#     content: |
+#       { "workers": [
+#         {% for item in created_workers.results %}
+#         {
+#           "name": "{{ item.item.name }}",
+#           "internal_ip": "{{ item.data.networkInterfaces[0].networkIP }}",
+#           "external_ip": "{{ item.data.networkInterfaces[0].accessConfigs[0].natIP }}"
+#         }{% if not loop.last %},{% endif %}
+#         {% endfor %}
+#       ] }
+#   when: created_workers is defined
+
+
+
+
+# - name: Save worker node IPs from machines_info
+#   copy:
+#     dest: /home/pisethkhon888/k8s/gcp_instance.json
+#     content: |
+#       {{
+#         machines_info | map(attribute='name') | zip(
+#         machines_info | map(attribute='ansible_host') ) | map('list') | list | to_json
+#       }}
+#   when: machines_info is defined
+
+
