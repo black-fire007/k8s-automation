@@ -64,16 +64,24 @@ google_project_id: "stone-victor-466807-s7"
 ssh_public_key_file: "/home/pisethkhon888/.ssh/id_rsa.pub"
 ssh_private_key_file: "/home/pisethkhon888/.ssh/id_rsa"
 
-
 master:
   name: master1
   internal_ip: 10.148.0.14   # or external IP if needed
   external_ip: 34.124.178.96
 
-
 # Kubespray paths
-kubespray_dir: "/home/pisethkhon888/kubespray"
-inventory_file: "{{ kubespray_dir }}/inventory/mycluster/hosts.yaml"
+kubespray_dir: "/home/pisethkhon888/k8s/kubespray"
+inventory_file: "{{ kubespray_dir }}/inventory/mycluster/hosts.yml"
+admin_conf: "{{ kubespray_dir }}/inventory/mycluster/artifacts/admin.conf"
+
+
+# Enable addons
+k8s_dashboard: true
+helm_enabled: true
+argocd_enabled: true
+metrics_server_enabled: true
+certmanager_enabled: true
+nginx_ingress_enabled: true
 
 # Kubernetes cluster settings
 kube_version: v1.28.0
@@ -83,13 +91,7 @@ kube_network_plugin: calico
 dashboard_domain: "k8s-dashboard.sethnexusonline.online"
 argocd_domain: "argocd.sethnexusonline.online"
 
-# Enable addons
-k8s_dashboard: true
-helm_enabled: true
-argocd_enabled: true
-metrics_server_enabled: true
-certmanager_enabled: true
-nginx_ingress_enabled: true
+
 
 # VM machine specs
 machine_specs:

@@ -1,4 +1,3 @@
-
 - name: Provision worker nodes in GCP
   hosts: localhost
   gather_facts: no

@@ -1,23 +1,23 @@
 
-# - name: Create HA Kubernetes cluster with Kubespray
-#   hosts: localhost
-#   gather_facts: no
-#   roles:
-#     - kubespray
-
-- name: Setup Kubernetes cluster with Kubespray
+- name: Create HA Kubernetes cluster with Kubespray
   hosts: localhost
-  gather_facts: false
-  vars:
-    project: stone-victor-466807-s7
-    zone: asia-southeast1-b
-    service_account_file: /home/pisethkhon888/credentials/service-account.json
-    ssh_public_key_file: /home/pisethkhon888/.ssh/id_rsa.pub
-    ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa
-    master_name: k8s-automation
-    worker_names:
-      - node1
-      - node2
-      - node3
+  gather_facts: no
   roles:
     - kubespray
+
+# - name: Setup Kubernetes cluster with Kubespray
+#   hosts: localhost
+#   gather_facts: false
+#   vars:
+#     project: stone-victor-466807-s7
+#     zone: asia-southeast1-b
+#     service_account_file: /home/pisethkhon888/credentials/service-account.json
+#     ssh_public_key_file: /home/pisethkhon888/.ssh/id_rsa.pub
+#     ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa
+#     master_name: k8s-automation
+#     worker_names:
+#       - node1
+#       - node2
+#       - node3
+#   roles:
+#     - kubespray

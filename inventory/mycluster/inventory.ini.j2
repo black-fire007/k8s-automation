@@ -1,0 +1,7 @@
+
+
+[workers]
+{% for node in workers | default([]) %}
+{{ node.name }} ansible_host={{ node.external_ip }}
+{% endfor %}
+

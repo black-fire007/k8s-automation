@@ -1,6 +1,6 @@
 
 - name: Apply cert-manager ClusterIssuer
-  hosts: all
+  hosts: localhost
   become: yes
   roles:
     - certmanager

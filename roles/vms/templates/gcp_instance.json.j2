@@ -9,3 +9,16 @@
   {% endfor %}
   ]
 }
+
+
+{# {
+  "workers": [
+  {% for node in valid_workers %}
+    {
+      "name": "{{ node.name }}",
+      "internal_ip": "{{ node.networkInterfaces[0].networkIP }}",
+      "external_ip": "{{ node.networkInterfaces[0].accessConfigs[0].natIP }}"
+    }{% if not loop.last %},{% endif %}
+  {% endfor %}
+  ]
+} #}

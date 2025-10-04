@@ -1,15 +1,16 @@
 - name: Wait for master1 SSH to be ready
   wait_for:
     # host: "{{ hostvars['master1'].ansible_host }}"
-    host: "10.148.0.14"
+    host: "34.124.178.96"
     port: 22
     state: started
     timeout: 300
 
 - name: Check if SSH public key exists
   stat:
-    path: "{{ ssh_public_key_file }}"
+    path: "{{ ssh_public_key_file | default(lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
   register: ssh_pubkey_stat
+
 
 - name: Generate SSH key pair if no public key exists
   shell: ssh-keygen -t rsa -b 4096 -f {{ ssh_private_key_file }} -N ''
@@ -17,10 +18,22 @@
 
 - name: Slurp SSH public key
   slurp:
-    src: "{{ ssh_public_key_file }}"
+    src: "{{ ssh_public_key_file | default(lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
   register: ssh_pubkey
 
-- name: Create worker nodes
+# if node create already skip 
+# 1️⃣ Get existing worker nodes
+- name: Gather existing worker nodes in GCP
+  google.cloud.gcp_compute_instance_info:
+    project: "{{ google_project_id }}"
+    auth_kind: serviceaccount
+    service_account_file: "{{ cloud_credentials_file }}"
+    zone: "asia-east2-b"
+  register: existing_instances
+
+
+# 2️⃣ Create worker nodes (state: present will auto-handle missing nodes)
+- name: Ensure worker nodes are present
   google.cloud.gcp_compute_instance:
     name: "{{ item.name }}"
     machine_type: "{{ item.machine_type }}"
@@ -49,50 +62,133 @@
         - http-server
         - https-server
   loop: "{{ machines_info }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.name not in (existing_instances.resources | map(attribute='name') | list | default([]))
   register: created_workers
 
 
+# 3️⃣ Wait for SSH only on newly created worker nodes
+# - name: Wait for SSH on newly created worker nodes
+#   wait_for:
+#     host: "{{ item.instance.networkInterfaces[0].accessConfigs[0].natIP }}"
+#     port: 22
+#     timeout: 300
+#   loop: "{{ created_workers.results | selectattr('instance', 'defined') | list }}"
+#   loop_control:
+#     label: "{{ item.item.name }}"
+#   when: created_workers is defined and created_workers.results | length > 0
+
+
+
+
+# 
+
+
+# - name: Create worker nodes
+#   google.cloud.gcp_compute_instance:
+#     name: "{{ item.name }}"
+#     machine_type: "{{ item.machine_type }}"
+#     zone: "{{ item.zone }}"
+#     project: "{{ google_project_id }}"
+#     auth_kind: serviceaccount
+#     service_account_file: "{{ cloud_credentials_file }}"
+#     state: present
+#     metadata:
+#       ssh-keys: "{{ ansible_user }}:{{ ssh_pubkey['content'] | b64decode }}"
+#     disks:
+#       - auto_delete: true
+#         boot: true
+#         initialize_params:
+#           source_image: "{{ item.image }}"
+#           disk_size_gb: "{{ item.disk_size }}"
+#           disk_type: "{{ item.disk_type }}"
+#     network_interfaces:
+#       - network:
+#           selfLink: "projects/{{ google_project_id }}/global/networks/default"
+#         access_configs:
+#           - name: External NAT
+#             type: ONE_TO_ONE_NAT
+#     tags:
+#       items:
+#         - http-server
+#         - https-server
+#   loop: "{{ machines_info }}"
+#   register: created_workers
+
+
 # 5️⃣ Wait for worker nodes SSH
-- name: Wait for worker nodes SSH
-  wait_for:
-    host: "{{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
-    port: 22
-    state: started
-    timeout: 300
-  loop: "{{ created_workers.results }}"
+# - name: Wait for worker nodes SSH
+#   wait_for:
+#     host: "{{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
+#     port: 22
+#     state: started
+#     timeout: 300
+#   loop: "{{ created_workers.results }}"
+
+
+
+# - name: Save worker node IPs to gcp_instance.json
+#   template:
+#     src: gcp_instance.json.j2
+#     dest: /home/pisethkhon888/k8s/gcp_instance.json
+#   when: created_workers is defined
 
 - name: Save worker node IPs to gcp_instance.json
   template:
     src: gcp_instance.json.j2
     dest: /home/pisethkhon888/k8s/gcp_instance.json
-  when: created_workers is defined
+  vars:
+    valid_workers: >-
+      {{ 
+        (created_workers.results | default([]))
+        | selectattr('instance','defined')
+        | map(attribute='instance')
+        | selectattr('networkInterfaces','defined')
+        | list
+      }}
+  when: valid_workers | length > 0
 
-# - name: Save worker node IPs to gcp_instance.json
-#   copy:
-#     dest: /home/pisethkhon888/k8s/gcp_instance.json
-#     content: |
-#       { "workers": [
-#         {% for item in created_workers.results %}
-#         {
-#           "name": "{{ item.item.name }}",
-#           "internal_ip": "{{ item.data.networkInterfaces[0].networkIP }}",
-#           "external_ip": "{{ item.data.networkInterfaces[0].accessConfigs[0].natIP }}"
-#         }{% if not loop.last %},{% endif %}
-#         {% endfor %}
-#       ] }
-#   when: created_workers is defined
+- name: Load GCP instances from JSON
+  set_fact:
+    gcp_data: "{{ lookup('file', '/home/pisethkhon888/k8s/gcp_instance.json') | from_json }}"
+# 1️⃣ Load GCP instance data
+# - name: Load worker nodes from JSON
+#   include_vars:
+#     file: /home/pisethkhon888/k8s/gcp_instance.json
+#     name: gcp_data
+# Ensure inventory directory exists
+# - name: Ensure inventory directory exists
+#   file:
+#     path: "/home/pisethkhon888/k8s/inventory/mycluster"
+#     state: directory
+#     mode: '0755'
+
+# Generate dynamic hosts.yml
+# - name: Generate dynamic hosts.yml
+#   template:
+#     src: /home/pisethkhon888/k8s/inventory/mycluster/inventory.ini.j2
+#     dest: "/home/pisethkhon888/k8s/inventory/mycluster/inventory.ini"
+
+- name: Append template content to inventory.ini
+  blockinfile:
+    path: /home/pisethkhon888/k8s/inventory/mycluster/inventory.ini
+    marker: "# {mark} DYNAMIC HOSTS"
+    block: "{{ lookup('template', '/home/pisethkhon888/k8s/inventory/mycluster/inventory.ini.j2') }}"
+  vars:
+    workers: "{{ gcp_data.workers }}"
 
 
 
 
-# - name: Save worker node IPs from machines_info
-#   copy:
-#     dest: /home/pisethkhon888/k8s/gcp_instance.json
-#     content: |
-#       {{
-#         machines_info | map(attribute='name') | zip(
-#         machines_info | map(attribute='ansible_host') ) | map('list') | list | to_json
-#       }}
-#   when: machines_info is defined
-
-
+# - name: Enable cluster addons
+#   blockinfile:
+#     path: "/home/pisethkhon888/kubespray/inventory/sample/group_vars/k8s_cluster/addons.yml"
+#     create: yes
+#     block: |
+#       dashboard_enabled: true
+#       helm_enabled: true
+#       argocd_enabled: true
+#       metrics_server_enabled: true
+#       cert_manager_enabled: true
+#       ingress_nginx_enabled: true
