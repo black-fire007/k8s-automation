@@ -169,36 +169,37 @@
 
 
 
-
+#################
 # 0️⃣ Remove old Kubespray if exists
-- name: Remove old Kubespray directory
-  file:
-    path: /home/pisethkhon888/k8s/kubespray
-    state: absent
+# - name: Remove old Kubespray directory
+#   file:
+#     path: /home/pisethkhon888/k8s/kubespray
+#     state: absent
 
-# 1️⃣ Clone Kubespray
-- name: Clone Kubespray
-  git:
-    repo: https://github.com/kubernetes-sigs/kubespray.git
-    dest: /home/pisethkhon888/k8s/kubespray
-    version: master
-  ignore_errors: yes
+# #1️⃣ Clone Kubespray
+# - name: Clone Kubespray
+#   git:
+#     repo: https://github.com/kubernetes-sigs/kubespray.git
+#     dest: /home/pisethkhon888/k8s/kubespray
+#     version: master
+#   ignore_errors: yes
 
-# 4️⃣ Install required Python packages
-- name: Install Python requirements for Kubespray
-  pip:
-    requirements: "{{ kubespray_dir }}/requirements.txt"
-    executable: /usr/bin/pip3
+# # 4️⃣ Install required Python packages
+# - name: Install Python requirements for Kubespray
+#   pip:
+#     requirements: "{{ kubespray_dir }}/requirements.txt"
+#     executable: /usr/bin/pip3
   
-- name: Remove Git and CI directories from Kubespray
-  file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /home/pisethkhon888/k8s/kubespray/.git
-    - /home/pisethkhon888/k8s/kubespray/.github
-    - /home/pisethkhon888/k8s/kubespray/.gitlab-ci
+# - name: Remove Git and CI directories from Kubespray
+#   file:
+#     path: "{{ item }}"
+#     state: absent
+#   loop:
+#     - /home/pisethkhon888/k8s/kubespray/.git
+#     - /home/pisethkhon888/k8s/kubespray/.github
+#     - /home/pisethkhon888/k8s/kubespray/.gitlab-ci
 
+#################
 # - name: Load GCP instances from JSON
 #   set_fact:
 #     gcp_data: "{{ lookup('file', '/home/pisethkhon888/k8s/gcp_instance.json') | from_json }}"
@@ -210,7 +211,7 @@
 #     dest: /home/pisethkhon888/k8s/inventory/mycluster/inventory.ini
 #     mode: '0644'
 
-
+#################
 # option 2
 - name: Overwrite Kubespray inventory.ini with custom configuration
   template:
@@ -244,10 +245,10 @@
   replace:
     path: "/home/pisethkhon888/k8s/kubespray/inventory/sample/group_vars/k8s_cluster/k8s-cluster.yml"
     regexp: "^{{ item }}:\\s*cluster.local"
-    replace: "{{ item }}: pro_cluster"
+    replace: "{{ item }}: pro.cluster"
   loop:
     - cluster_name
-
+#################
 
 
 # 1️⃣ Load GCP instance data
@@ -288,26 +289,26 @@
 # # 
 
 # 2️⃣ Set master and workers facts
-- name: Set master and worker facts
-  set_fact:
-    master:
-      name: master1
-      internal_ip: 10.148.0.14
-      external_ip: 34.124.178.96
-    workers: "{{ gcp_data.workers }}"
+# - name: Set master and worker facts
+#   set_fact:
+#     master:
+#       name: master1
+#       internal_ip: 10.148.0.14
+#       external_ip: 34.124.178.96
+#     workers: "{{ gcp_data.workers }}"
 
-# 3️⃣ Debug to confirm
-- name: Debug master
-  debug:
-    var: master
+# # 3️⃣ Debug to confirm
+# - name: Debug master
+#   debug:
+#     var: master
 
 - name: Set worker IPs list
   set_fact:
     worker_ips: "{{ gcp_data.workers | map(attribute='internal_ip') | list }}"
 
-- name: Debug worker IPs
-  debug:
-    var: worker_ips
+# - name: Debug worker IPs
+#   debug:
+#     var: worker_ips
 # 1️⃣ Wait for master SSH
 - name: Wait for master SSH
   wait_for:
@@ -325,7 +326,8 @@
     timeout: 300
   loop: "{{ worker_ips }}"
 
-# # 4️⃣ Copy SSH key to master
+#################
+# 4️⃣ Copy SSH key to master
 # - name: Copy SSH key to master
 #   authorized_key:
 #     user: pisethkhon888
@@ -335,7 +337,8 @@
 #   vars:
 #     ansible_ssh_private_key_file: "{{ ssh_private_key_file }}"
 
-    # 5️⃣ Copy SSH key to worker nodes
+
+   # # 5️⃣ Copy SSH key to worker nodes
 - name: Copy SSH key to worker nodes
   authorized_key:
     user: pisethkhon888
@@ -345,7 +348,7 @@
   delegate_to: "{{ item }}"
   vars:
     ansible_ssh_private_key_file: "{{ ssh_private_key_file }}"
-
+#################
 # option1 static
 # - name: Ensure inventory directory exists
 #   file:
@@ -419,18 +422,32 @@
 #   args:
 #     chdir: "{{ kubespray_dir }}"
 
-    # 2️⃣ Run Kubespray to setup HA cluster
-- name: Run Kubespray cluster.yml
-  command: >
-    ansible-playbook -b -v
-    -i /home/pisethkhon888/k8s/kubespray/inventory/sample/inventory.ini
-    cluster.yml
-  args:
-    chdir: "/home/pisethkhon888/k8s/kubespray"
-# - name: Deploy HA Kubernetes cluster with Kubespray
+# ############
+# 2️⃣ Run Kubespray to setup HA cluster
+# - name: Run Kubespray to setup HA cluster
 #   command: >
-#     ansible-playbook -i {{ inventory_file }}
-#     --become --become-user=root
-#     {{ kubespray_dir }}/cluster.yml
+#     ansible-playbook -b -v
+#     -i /home/pisethkhon888/k8s/kubespray/inventory/sample/inventory.ini
+#     cluster.yml
 #   args:
-#     chdir: "{{ kubespray_dir }}"
+#     chdir: "/home/pisethkhon888/k8s/kubespray"
+# ############
+
+
+
+# - name: Create .kube directory
+#   file:
+#     path: "{{ lookup('env','HOME') }}/.kube"
+#     state: directory
+#     mode: '0755'
+
+# - name: Copy admin.conf to user kube config
+#   copy:
+#     src: /etc/kubernetes/admin.conf
+#     dest: "{{ lookup('env','HOME') }}/.kube/config"
+#     remote_src: yes
+#     owner: "{{ lookup('env','USER') }}"
+#     group: "{{ lookup('env','USER') }}"
+#     mode: '0644'
+
+

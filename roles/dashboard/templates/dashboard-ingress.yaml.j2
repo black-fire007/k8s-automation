@@ -1,3 +1,49 @@
+{# apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - host: {{ dashboard_domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kubernetes-dashboard
+                port:
+                  number: 443 #}
+
+# =========================
+{# # 1️⃣ ServiceAccount + ClusterRoleBinding
+# =========================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: admin-user
+    namespace: kubernetes-dashboard
+
+# =========================
+# 2️⃣ Ingress for Kubernetes Dashboard
+# =========================
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -11,6 +57,87 @@ spec:
       http:
         paths:
           - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kubernetes-dashboard
+                port:
+                  number: 443 #}
+
+
+# =========================
+# 1️⃣ Namespace
+# =========================
+{# apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubernetes-dashboard #}
+
+---
+
+# =========================
+# 2️⃣ ServiceAccount + ClusterRoleBinding
+# =========================
+{# apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: admin-user
+    namespace: kube-system #}
+
+---
+
+# =========================
+# 3️⃣ Kubernetes Dashboard Service (NodePort for HTTPS)
+# =========================
+{# apiVersion: v1
+kind: Service
+metadata:
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+spec:
+  type: NodePort
+  selector:
+    k8s-app: kubernetes-dashboard
+  ports:
+    - port: 443        # External port inside cluster
+      targetPort: 8443 # Container port where Dashboard serves HTTPS
+      nodePort: 30443  # Fixed NodePort #}
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard-ingress
+  namespace: kube-system
+  annotations:
+  
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - {{ dashboard_domain }}
+      secretName: kubernetes-dashboard-tls
+  rules:
+    - host: {{ dashboard_domain }}
+      http:
+        paths:
+          - path: "/"
             pathType: Prefix
             backend:
               service:

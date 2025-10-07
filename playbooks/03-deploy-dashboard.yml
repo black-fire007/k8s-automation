@@ -1,6 +1,191 @@
+# - name: Deploy Kubernetes Dashboard
+#   hosts: localhost
+#   become: yes
+#   tasks:
+#     - name: Create kubernetes-dashboard namespace
+#       kubernetes.core.k8s:
+#         state: present
+#         api_version: v1
+#         kind: Namespace
+#         name: kubernetes-dashboard
+
+#   # creating for testing need change ClusterIP to NodePort 
+#     # - name: Change kubernetes-dashboard Service type to NodePort with fixed port
+#     #   kubernetes.core.k8s:
+#     #     state: present
+#     #     kind: Service
+#     #     name: kubernetes-dashboard
+#     #     namespace: kube-system   # ✅ use kube-system here
+#     #     merge_type: strategic-merge
+#     #     definition:
+#     #       spec:
+#     #         type: NodePort
+#     #         ports:
+#     #           - port: 443
+#     #             targetPort: 8443
+#     #             nodePort: 30444
+
+#     # - name: Change kubernetes-dashboard Service type back to ClusterIP
+#     #   kubernetes.core.k8s:
+#     #     state: present
+#     #     kind: Service
+#     #     name: kubernetes-dashboard
+#     #     namespace: kube-system
+#     #     merge_type: strategic-merge
+#     #     definition:
+#     #       spec:
+#     #         type: ClusterIP
+#     #         ports:
+#     #           - port: 443
+#     #             targetPort: 443
+
+#   roles:
+#     - dashboard
+
 
 - name: Deploy Kubernetes Dashboard
   hosts: localhost
   become: yes
   roles:
     - dashboard
+
+# - name: Manage Nginx Ingress Controller
+#   hosts: localhost
+#   become: yes
+#   tasks:
+
+#     #################################################
+#     # 1️⃣ Delete existing Nginx Ingress (cleanup)
+#     #################################################
+#     - name: Delete nginx-ingress namespace if exists
+#       kubernetes.core.k8s:
+#         state: absent
+#         kind: Namespace
+#         name: kube-system
+#       ignore_errors: yes  # skip if already deleted
+
+#     - name: Delete nginx-ingress ClusterRoleBinding
+#       kubernetes.core.k8s:
+#         state: absent
+#         kind: ClusterRoleBinding
+#         name: nginx-ingress
+#       ignore_errors: yes
+
+#     - name: Delete nginx-ingress ClusterRole
+#       kubernetes.core.k8s:
+#         state: absent
+#         kind: ClusterRole
+#         name: nginx-ingress
+#       ignore_errors: yes
+
+#     - name: Delete nginx-ingress ServiceAccount
+#       kubernetes.core.k8s:
+#         state: absent
+#         kind: ServiceAccount
+#         name: nginx-ingress
+#         namespace: kube-system
+#       ignore_errors: yes
+
+#     #################################################
+#     # 2️⃣ Install fresh Nginx Ingress Controller
+#     #################################################
+#     - name: Create ServiceAccount for Nginx Ingress
+#       kubernetes.core.k8s:
+#         state: present
+#         definition:
+#           apiVersion: v1
+#           kind: ServiceAccount
+#           metadata:
+#             name: nginx-ingress
+#             namespace: kube-system
+
+#     - name: Create ClusterRole for Nginx Ingress
+#       kubernetes.core.k8s:
+#         state: present
+#         definition:
+#           apiVersion: rbac.authorization.k8s.io/v1
+#           kind: ClusterRole
+#           metadata:
+#             name: nginx-ingress
+#           rules:
+#             - apiGroups: [""]
+#               resources: ["services", "endpoints", "pods"]
+#               verbs: ["get", "list", "watch"]
+#             - apiGroups: ["extensions", "networking.k8s.io"]
+#               resources: ["ingresses"]
+#               verbs: ["get", "list", "watch"]
+#             - apiGroups: [""]
+#               resources: ["nodes"]
+#               verbs: ["get", "list", "watch"]
+
+#     - name: Create ClusterRoleBinding for Nginx Ingress
+#       kubernetes.core.k8s:
+#         state: present
+#         definition:
+#           apiVersion: rbac.authorization.k8s.io/v1
+#           kind: ClusterRoleBinding
+#           metadata:
+#             name: nginx-ingress
+#           roleRef:
+#             apiGroup: rbac.authorization.k8s.io
+#             kind: ClusterRole
+#             name: nginx-ingress
+#           subjects:
+#             - kind: ServiceAccount
+#               name: nginx-ingress
+#               namespace: kube-system
+
+#     - name: Deploy Nginx Ingress Controller
+#       kubernetes.core.k8s:
+#         state: present
+#         definition:
+#           apiVersion: apps/v1
+#           kind: Deployment
+#           metadata:
+#             name: nginx-ingress-controller
+#             namespace: kube-system
+#           spec:
+#             replicas: 1
+#             selector:
+#               matchLabels:
+#                 app: nginx-ingress
+#             template:
+#               metadata:
+#                 labels:
+#                   app: nginx-ingress
+#               spec:
+#                 serviceAccountName: nginx-ingress
+#                 containers:
+#                   - name: nginx-ingress-controller
+#                     image: k8s.gcr.io/ingress-nginx/controller:v1.14.0
+#                     args:
+#                       - /nginx-ingress-controller
+#                       - --publish-service=$(POD_NAMESPACE)/nginx-ingress
+#                       - --election-id=ingress-controller-leader
+#                       - --ingress-class=nginx
+#                     ports:
+#                       - containerPort: 80
+#                       - containerPort: 443
+
+#     - name: Expose Nginx Ingress via ClusterIP Service
+#       kubernetes.core.k8s:
+#         state: present
+#         definition:
+#           apiVersion: v1
+#           kind: Service
+#           metadata:
+#             name: nginx-ingress
+#             namespace: kube-system
+#           spec:
+#             type: ClusterIP
+#             selector:
+#               app: nginx-ingress
+#             ports:
+#               - name: http
+#                 protocol: TCP
+#                 port: 80
+#                 targetPort: 80
+#               - name: https
+#                 protocol: TCP
+#                 port: 443
+#                 targetPort: 443

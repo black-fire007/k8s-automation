@@ -25,14 +25,18 @@
 # roles/ingress/tasks/main.yml
 
   # 7️⃣ Install Nginx Ingress Controller (Optional)
-  - name: Install Nginx Ingress Controller
-    kubernetes.core.k8s:
-      state: present
-      definition: "{{ lookup('file', '/home/pisethkhon888/k8s/roles/ingress/templates/ingress.yaml') }}"
-    delegate_to: localhost
-
-# - name: Install Nginx Ingress Controller
+  # - name: Install Nginx Ingress Controller
+  #   kubernetes.core.k8s:
+  #     state: present
+  #     definition: "{{ lookup('file', '/home/pisethkhon888/k8s/roles/ingress/templates/ingress.yaml') }}"
+  #   delegate_to: localhost
+# - name: remove Nginx Ingress Controller
 #   kubernetes.core.k8s:
-#     state: present
+#     state: absent
 #     definition: "{{ lookup('file', '/home/pisethkhon888/k8s/roles/ingress/templates/ingress.yaml') }}"
+
+- name: Install Nginx Ingress Controller
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', '/home/pisethkhon888/k8s/roles/ingress/templates/ingress.yaml') }}"
 

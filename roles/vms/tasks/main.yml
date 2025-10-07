@@ -8,7 +8,7 @@
 
 - name: Check if SSH public key exists
   stat:
-    path: "{{ ssh_public_key_file | default(lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+    path: "{{ ssh_public_key_file  }}"
   register: ssh_pubkey_stat
 
 
@@ -18,8 +18,10 @@
 
 - name: Slurp SSH public key
   slurp:
-    src: "{{ ssh_public_key_file | default(lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+    src: "{{ ssh_public_key_file }}"
   register: ssh_pubkey
+
+#### it tasks create all node and if node have already tasks skip
 
 # if node create already skip 
 # 1️⃣ Get existing worker nodes
@@ -67,24 +69,10 @@
   when: item.name not in (existing_instances.resources | map(attribute='name') | list | default([]))
   register: created_workers
 
-
-# 3️⃣ Wait for SSH only on newly created worker nodes
-# - name: Wait for SSH on newly created worker nodes
-#   wait_for:
-#     host: "{{ item.instance.networkInterfaces[0].accessConfigs[0].natIP }}"
-#     port: 22
-#     timeout: 300
-#   loop: "{{ created_workers.results | selectattr('instance', 'defined') | list }}"
-#   loop_control:
-#     label: "{{ item.item.name }}"
-#   when: created_workers is defined and created_workers.results | length > 0
+#### it tasks create all node and if node have already tasks skip
 
 
-
-
-# 
-
-
+# # 
 # - name: Create worker nodes
 #   google.cloud.gcp_compute_instance:
 #     name: "{{ item.name }}"
@@ -115,6 +103,19 @@
 #         - https-server
 #   loop: "{{ machines_info }}"
 #   register: created_workers
+
+# 3️⃣ Wait for SSH only on newly created worker nodes
+- name: Wait for SSH on newly created worker nodes
+  wait_for:
+    host: "{{ item.instance.networkInterfaces[0].accessConfigs[0].natIP }}"
+    port: 22
+    timeout: 300
+  loop: "{{ created_workers.results | selectattr('instance', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: created_workers is defined and created_workers.results | length > 0
+
+###
 
 
 # 5️⃣ Wait for worker nodes SSH
