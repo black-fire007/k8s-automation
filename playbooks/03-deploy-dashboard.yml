@@ -1,3 +1,9 @@
+
+- name: Deploy Kubernetes Dashboard
+  hosts: localhost
+  become: yes
+  roles:
+    - dashboard
 # - name: Deploy Kubernetes Dashboard
 #   hosts: localhost
 #   become: yes
@@ -43,11 +49,6 @@
 #     - dashboard
 
 
-- name: Deploy Kubernetes Dashboard
-  hosts: localhost
-  become: yes
-  roles:
-    - dashboard
 
 # - name: Manage Nginx Ingress Controller
 #   hosts: localhost

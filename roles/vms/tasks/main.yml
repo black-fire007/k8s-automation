@@ -24,56 +24,18 @@
 #### it tasks create all node and if node have already tasks skip
 
 # if node create already skip 
-# 1️⃣ Get existing worker nodes
-- name: Gather existing worker nodes in GCP
-  google.cloud.gcp_compute_instance_info:
-    project: "{{ google_project_id }}"
-    auth_kind: serviceaccount
-    service_account_file: "{{ cloud_credentials_file }}"
-    zone: "asia-east2-b"
-  register: existing_instances
+# # 1️⃣ Get existing worker nodes
+# - name: Gather existing worker nodes in GCP
+#   google.cloud.gcp_compute_instance_info:
+#     project: "{{ google_project_id }}"
+#     auth_kind: serviceaccount
+#     service_account_file: "{{ cloud_credentials_file }}"
+#     zone: "asia-east2-b"
+#   register: existing_instances
 
 
-# 2️⃣ Create worker nodes (state: present will auto-handle missing nodes)
-- name: Ensure worker nodes are present
-  google.cloud.gcp_compute_instance:
-    name: "{{ item.name }}"
-    machine_type: "{{ item.machine_type }}"
-    zone: "{{ item.zone }}"
-    project: "{{ google_project_id }}"
-    auth_kind: serviceaccount
-    service_account_file: "{{ cloud_credentials_file }}"
-    state: present
-    metadata:
-      ssh-keys: "{{ ansible_user }}:{{ ssh_pubkey['content'] | b64decode }}"
-    disks:
-      - auto_delete: true
-        boot: true
-        initialize_params:
-          source_image: "{{ item.image }}"
-          disk_size_gb: "{{ item.disk_size }}"
-          disk_type: "{{ item.disk_type }}"
-    network_interfaces:
-      - network:
-          selfLink: "projects/{{ google_project_id }}/global/networks/default"
-        access_configs:
-          - name: External NAT
-            type: ONE_TO_ONE_NAT
-    tags:
-      items:
-        - http-server
-        - https-server
-  loop: "{{ machines_info }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: item.name not in (existing_instances.resources | map(attribute='name') | list | default([]))
-  register: created_workers
-
-#### it tasks create all node and if node have already tasks skip
-
-
-# # 
-# - name: Create worker nodes
+# # 2️⃣ Create worker nodes (state: present will auto-handle missing nodes)
+# - name: Ensure worker nodes are present
 #   google.cloud.gcp_compute_instance:
 #     name: "{{ item.name }}"
 #     machine_type: "{{ item.machine_type }}"
@@ -102,7 +64,45 @@
 #         - http-server
 #         - https-server
 #   loop: "{{ machines_info }}"
+#   loop_control:
+#     label: "{{ item.name }}"
+#   when: item.name not in (existing_instances.resources | map(attribute='name') | list | default([]))
 #   register: created_workers
+
+#### it tasks create all node and if node have already tasks skip
+
+
+# # 
+- name: Create worker nodes
+  google.cloud.gcp_compute_instance:
+    name: "{{ item.name }}"
+    machine_type: "{{ item.machine_type }}"
+    zone: "{{ item.zone }}"
+    project: "{{ google_project_id }}"
+    auth_kind: serviceaccount
+    service_account_file: "{{ cloud_credentials_file }}"
+    state: present
+    metadata:
+      ssh-keys: "{{ ansible_user }}:{{ ssh_pubkey['content'] | b64decode }}"
+    disks:
+      - auto_delete: true
+        boot: true
+        initialize_params:
+          source_image: "{{ item.image }}"
+          disk_size_gb: "{{ item.disk_size }}"
+          disk_type: "{{ item.disk_type }}"
+    network_interfaces:
+      - network:
+          selfLink: "projects/{{ google_project_id }}/global/networks/default"
+        access_configs:
+          - name: External NAT
+            type: ONE_TO_ONE_NAT
+    tags:
+      items:
+        - http-server
+        - https-server
+  loop: "{{ machines_info }}"
+  register: created_workers
 
 # 3️⃣ Wait for SSH only on newly created worker nodes
 - name: Wait for SSH on newly created worker nodes
@@ -119,36 +119,36 @@
 
 
 # 5️⃣ Wait for worker nodes SSH
-# - name: Wait for worker nodes SSH
-#   wait_for:
-#     host: "{{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
-#     port: 22
-#     state: started
-#     timeout: 300
-#   loop: "{{ created_workers.results }}"
+- name: Wait for worker nodes SSH
+  wait_for:
+    host: "{{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
+    port: 22
+    state: started
+    timeout: 300
+  loop: "{{ created_workers.results }}"
 
 
-
-# - name: Save worker node IPs to gcp_instance.json
-#   template:
-#     src: gcp_instance.json.j2
-#     dest: /home/pisethkhon888/k8s/gcp_instance.json
-#   when: created_workers is defined
 
 - name: Save worker node IPs to gcp_instance.json
   template:
     src: gcp_instance.json.j2
     dest: /home/pisethkhon888/k8s/gcp_instance.json
-  vars:
-    valid_workers: >-
-      {{ 
-        (created_workers.results | default([]))
-        | selectattr('instance','defined')
-        | map(attribute='instance')
-        | selectattr('networkInterfaces','defined')
-        | list
-      }}
-  when: valid_workers | length > 0
+  when: created_workers is defined
+
+# - name: Save worker node IPs to gcp_instance.json
+#   template:
+#     src: gcp_instance.json.j2
+#     dest: /home/pisethkhon888/k8s/gcp_instance.json
+#   vars:
+#     valid_workers: >-
+#       {{ 
+#         (created_workers.results | default([]))
+#         | selectattr('instance','defined')
+#         | map(attribute='instance')
+#         | selectattr('networkInterfaces','defined')
+#         | list
+#       }}
+#   when: valid_workers | length > 0
 
 - name: Load GCP instances from JSON
   set_fact:

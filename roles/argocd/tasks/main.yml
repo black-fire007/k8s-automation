@@ -3,30 +3,3 @@
     state: present
     definition: "{{ lookup('template', '/home/pisethkhon888/k8s/roles/argocd/templates/argocd-ingress.yaml.j2') }}"
 
-# - name: Deploy ArgoCD Ingress
-
-#   kubernetes.core.k8s:
-#     state: present
-#     kubeconfig: /home/pisethkhon888/.kube/config
-#     definition: "{{ lookup('template', '/home/pisethkhon888/k8s/roles/argocd/templates/argocd-ingress.yaml.j2') }}"
-
-
-# - name: Deploy ArgoCD
-#   kubernetes.core.k8s:
-#     state: present
-#     definition: |
-#       apiVersion: v1
-#       kind: Namespace
-#       metadata:
-#         name: argocd
-
-# - name: Apply ArgoCD Ingress
-#   template:
-#     src: argocd-ingress.yaml.j2
-#     dest: /tmp/argocd-ingress.yaml
-
-# - name: Apply ingress in cluster
-#   kubernetes.core.k8s:
-#     state: present
-#     src: /tmp/argocd-ingress.yaml
-

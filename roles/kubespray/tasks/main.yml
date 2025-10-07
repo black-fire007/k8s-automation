@@ -1,203 +1,33 @@
-# ---
-# # roles/kubespray/tasks/main.yml
-
-# - name: Clone Kubespray
-#   git:
-#     repo: https://github.com/kubernetes-sigs/kubespray.git
-#     dest: /home/pisethkhon888/kubespray
-#     version: master
-
-# - name: Install Python dependencies for Kubespray
-#   pip:
-#     requirements: /home/pisethkhon888/kubespray/requirements.txt
-#     executable: pip3
-
-# # ---- Discover VM IPs ----
-# # (this assumes you already created VMs with Ansible/Terraform and have registered their IPs in variables)
-
-# - name: Wait for VMs to come online (SSH check)
-#   wait_for:
-#     host: "{{ item }}"
-#     port: 22
-#     timeout: 300
-#   loop:
-#     - "{{ hostvars['master1']['ansible_host'] | default('') }}"
-#     - "{{ hostvars['node1']['ansible_host'] | default('') }}"
-#     - "{{ hostvars['node2']['ansible_host'] | default('') }}"
-#     - "{{ hostvars['node3']['ansible_host'] | default('') }}"
-#   when: item != ""
-
-# # ---- Update Kubespray inventory ----
-# - name: Ensure inventory directory exists
-#   file:
-#     path: /home/pisethkhon888/kubespray/inventory/mycluster
-#     state: directory
-
-# - name: Copy base hosts.yaml to Kubespray inventory
-#   copy:
-#     src: /home/pisethkhon888/k8s/inventory/mycluster/hosts.yml
-#     dest: /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
-#     force: yes
-
-# - name: Inject SSH config into hosts.yaml
-#   lineinfile:
-#     path: /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
-#     insertafter: "{{ item.after }}"
-#     line: "{{ item.line }}"
-#   loop:
-#     - { after: "master1:", line: "      ansible_user: pisethkhon888" }
-#     - { after: "master1:", line: "      ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa" }
-#     - { after: "node1:", line: "      ansible_user: pisethkhon888" }
-#     - { after: "node1:", line: "      ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa" }
-#     - { after: "node2:", line: "      ansible_user: pisethkhon888" }
-#     - { after: "node2:", line: "      ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa" }
-#     - { after: "node3:", line: "      ansible_user: pisethkhon888" }
-#     - { after: "node3:", line: "      ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa" }
-
-# # ---- Deploy Cluster ----
-# - name: Deploy HA Kubernetes cluster with Kubespray
-#   command: >
-#     ansible-playbook -i /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
-#     --become --become-user=root
-#     /home/pisethkhon888/kubespray/cluster.yml
-#   args:
-#     chdir: /home/pisethkhon888/kubespray
-# roles/kubespray/tasks/main.yml
----
-# roles/kubespray/tasks/main.yml
-
-# # 0️⃣ Remove old Kubespray if exists
-# - name: Remove old Kubespray directory
-#   file:
-#     path: /home/pisethkhon888/kubespray
-#     state: absent
-
-# # 1️⃣ Clone Kubespray
-# - name: Clone Kubespray
-#   git:
-#     repo: https://github.com/kubernetes-sigs/kubespray.git
-#     dest: /home/pisethkhon888/kubespray
-#     version: master
-#   ignore_errors: yes
-
-# # 2️⃣ Install Python dependencies
-# - name: Install Python dependencies for Kubespray
-#   pip:
-#     requirements: /home/pisethkhon888/kubespray/requirements.txt
-#     executable: pip3
-
-# # 3️⃣ Wait for SSH to master
-# - name: Wait for master SSH
-#   wait_for:
-#     host: "10.148.0.14"
-#     port: 22
-#     timeout: 300
-
-# # 4️⃣ Wait for SSH on worker nodes (use IPs from vms role)
-# - name: Wait for worker nodes SSH
-#   wait_for:
-#     host: "{{ item.instance.networkInterfaces[0].networkIP }}"
-#     port: 22
-#     timeout: 300
-#   loop: "{{ new_nodes.results }}"
-
-# # 5️⃣ Copy SSH keys to master
-# - name: Copy SSH keys to master
-#   authorized_key:
-#     user: pisethkhon888
-#     state: present
-#     key: "{{ lookup('file', '/home/pisethkhon888/.ssh/id_rsa.pub') }}"
-#   delegate_to: "10.148.0.14"
-
-# # 6️⃣ Copy SSH keys to worker nodes
-# - name: Copy SSH keys to worker nodes
-#   authorized_key:
-#     user: pisethkhon888
-#     state: present
-#     key: "{{ lookup('file', '/home/pisethkhon888/.ssh/id_rsa.pub') }}"
-#   loop: "{{ new_nodes.results }}"
-#   delegate_to: "{{ item.instance.networkInterfaces[0].networkIP }}"
-
-# # 7️⃣ Generate hosts.yaml dynamically
-# - name: Ensure inventory directory exists
-#   file:
-#     path: /home/pisethkhon888/kubespray/inventory/mycluster
-#     state: directory
-
-# - name: Generate hosts.yaml dynamically
-#   copy:
-#     dest: /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
-#     content: |
-#       all:
-#         hosts:
-#           master1:
-#             ansible_host: 10.148.0.14
-#             ansible_user: pisethkhon888
-#             ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa
-#           {% for node in new_nodes.results %}
-#           node{{ loop.index }}:
-#             ansible_host: {{ node.instance.networkInterfaces[0].networkIP }}
-#             ansible_user: pisethkhon888
-#             ansible_ssh_private_key_file: /home/pisethkhon888/.ssh/id_rsa
-#           {% endfor %}
-
-#         children:
-#           kube_control_plane:
-#             hosts:
-#               master1:
-#           kube_nodes:
-#             hosts:
-#               {% for node in new_nodes.results %}
-#               node{{ loop.index }}:
-#               {% endfor %}
-#           etcd:
-#             hosts:
-#               master1:
-#           k8s_cluster:
-#             children:
-#               kube_control_plane:
-#               kube_nodes:
-
-# # 8️⃣ Deploy Kubespray cluster
-# - name: Deploy HA Kubernetes cluster with Kubespray
-#   command: >
-#     ansible-playbook -i /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
-#     --become --become-user=root
-#     /home/pisethkhon888/kubespray/cluster.yml
-#   args:
-#     chdir: /home/pisethkhon888/kubespray
-
-
 
 #################
 # 0️⃣ Remove old Kubespray if exists
-# - name: Remove old Kubespray directory
-#   file:
-#     path: /home/pisethkhon888/k8s/kubespray
-#     state: absent
+- name: Remove old Kubespray directory
+  file:
+    path: /home/pisethkhon888/k8s/kubespray
+    state: absent
 
-# #1️⃣ Clone Kubespray
-# - name: Clone Kubespray
-#   git:
-#     repo: https://github.com/kubernetes-sigs/kubespray.git
-#     dest: /home/pisethkhon888/k8s/kubespray
-#     version: master
-#   ignore_errors: yes
+#1️⃣ Clone Kubespray
+- name: Clone Kubespray
+  git:
+    repo: https://github.com/kubernetes-sigs/kubespray.git
+    dest: /home/pisethkhon888/k8s/kubespray
+    version: master
+  ignore_errors: yes
 
-# # 4️⃣ Install required Python packages
-# - name: Install Python requirements for Kubespray
-#   pip:
-#     requirements: "{{ kubespray_dir }}/requirements.txt"
-#     executable: /usr/bin/pip3
+# 4️⃣ Install required Python packages
+- name: Install Python requirements for Kubespray
+  pip:
+    requirements: "{{ kubespray_dir }}/requirements.txt"
+    executable: /usr/bin/pip3
   
-# - name: Remove Git and CI directories from Kubespray
-#   file:
-#     path: "{{ item }}"
-#     state: absent
-#   loop:
-#     - /home/pisethkhon888/k8s/kubespray/.git
-#     - /home/pisethkhon888/k8s/kubespray/.github
-#     - /home/pisethkhon888/k8s/kubespray/.gitlab-ci
+- name: Remove Git and CI directories from Kubespray
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /home/pisethkhon888/k8s/kubespray/.git
+    - /home/pisethkhon888/k8s/kubespray/.github
+    - /home/pisethkhon888/k8s/kubespray/.gitlab-ci
 
 #################
 # - name: Load GCP instances from JSON
@@ -357,38 +187,6 @@
 #     mode: '0755' # is a safe default for directories that Ansible needs to write files into.
 
 
-# # 4️⃣ Generate dynamic hosts.yml safely
-# - name: Generate dynamic hosts.yml
-#   template:
-#     src: /home/pisethkhon888/k8s/inventory/mycluster/hosts.yml.j2
-#     dest: /home/pisethkhon888/kubespray/inventory/mycluster/hosts.yml
-# option1 static
-
-
-# # 3️⃣ Update cluster variables (all.yml)
-# - name: Set cluster variables
-#   template:
-#     src: all.yml.j2
-#     dest: "{{ kubespray_dir }}/inventory/mycluster/group_vars/all.yml"
-
-
-
-# 2️⃣ Ensure artifacts directory exists on control machine
-# - name: Ensure artifacts directory exists
-#   file:
-#     path: "{{ kubespray_dir }}/inventory/mycluster/artifacts"
-#     state: directory
-#     mode: '0755'
-#   delegate_to: localhost
-
-# 3️⃣ Initialize Kubernetes master node (only if not exists)
-# - name: Initialize Kubernetes master node
-#   command: kubeadm init --apiserver-advertise-address=10.148.0.14  --pod-network-cidr=10.244.0.0/16
-#   args:
-#     creates: /etc/kubernetes/admin.conf
-#   become: yes
-#   delegate_to: "10.148.0.14 "
-#   ignore_errors: yes
 
 # 2️⃣ Update inventory hosts (masters/workers) dynamically
 # - name: Update inventory hosts
@@ -415,39 +213,26 @@
 #       ingress_nginx_enabled: true
 
 
-# 6️⃣ Run Kubespray cluster setup
-# - name: Deploy HA Kubernetes cluster
-#   command: >
-#     ansible-playbook -b -v -i {{ inventory_file }} cluster.yml
-#   args:
-#     chdir: "{{ kubespray_dir }}"
+
 
 # ############
-# 2️⃣ Run Kubespray to setup HA cluster
-# - name: Run Kubespray to setup HA cluster
+# 2️⃣ reset Kubespray to setup HA cluster
+# - name: reset kubernetes
 #   command: >
 #     ansible-playbook -b -v
 #     -i /home/pisethkhon888/k8s/kubespray/inventory/sample/inventory.ini
-#     cluster.yml
+#     reset.yml
 #   args:
 #     chdir: "/home/pisethkhon888/k8s/kubespray"
+
+# 2️⃣ Run Kubespray to setup HA cluster
+- name: Run Kubespray to setup HA cluster
+  command: >
+    ansible-playbook -b -v
+    -i /home/pisethkhon888/k8s/kubespray/inventory/sample/inventory.ini
+    cluster.yml
+  args:
+    chdir: "/home/pisethkhon888/k8s/kubespray"
 # ############
-
-
-
-# - name: Create .kube directory
-#   file:
-#     path: "{{ lookup('env','HOME') }}/.kube"
-#     state: directory
-#     mode: '0755'
-
-# - name: Copy admin.conf to user kube config
-#   copy:
-#     src: /etc/kubernetes/admin.conf
-#     dest: "{{ lookup('env','HOME') }}/.kube/config"
-#     remote_src: yes
-#     owner: "{{ lookup('env','USER') }}"
-#     group: "{{ lookup('env','USER') }}"
-#     mode: '0644'
 
 

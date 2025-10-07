@@ -72,8 +72,10 @@ master:
 # Kubespray paths
 kubespray_dir: "/home/pisethkhon888/k8s/kubespray"
 inventory_file: "{{ kubespray_dir }}/inventory/mycluster/hosts.yml"
-admin_conf: "{{ kubespray_dir }}/inventory/mycluster/artifacts/admin.conf"
-
+# admin_conf: "{{ kubespray_dir }}/inventory/mycluster/artifacts/admin.conf"
+# Kubernetes cluster settings
+kube_version: v1.28.0
+kube_network_plugin: calico
 
 # Enable addons
 k8s_dashboard: true
@@ -83,9 +85,7 @@ metrics_server_enabled: true
 certmanager_enabled: true
 nginx_ingress_enabled: true
 
-# Kubernetes cluster settings
-kube_version: v1.28.0
-kube_network_plugin: calico
+
 
 # Addon domains
 dashboard_domain: "k8s-dashboard.sethnexusonline.online"

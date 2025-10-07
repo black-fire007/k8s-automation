@@ -1,6 +1,41 @@
-
 - name: Install Nginx Ingress Controller
   hosts: localhost
   become: yes
   roles:
     - ingress
+# - name: Remove Nginx Ingress Controller
+#   hosts: localhost
+#   become: yes
+#   tasks:
+#     - name: Delete nginx-ingress namespace if exists
+#       kubernetes.core.k8s:
+#         state: absent
+#         kind: Namespace
+#         name: kube-system
+#       ignore_errors: yes
+
+#     - name: Delete nginx-ingress ClusterRoleBinding
+#       kubernetes.core.k8s:
+#         state: absent
+#         kind: ClusterRoleBinding
+#         name: nginx-ingress
+#       ignore_errors: yes
+
+#     - name: Delete nginx-ingress ClusterRole
+#       kubernetes.core.k8s:
+#         state: absent
+#         kind: ClusterRole
+#         name: nginx-ingress
+#       ignore_errors: yes
+
+#     - name: Delete nginx-ingress ServiceAccount
+#       kubernetes.core.k8s:
+#         state: absent
+#         kind: ServiceAccount
+#         name: nginx-ingress
+#         namespace: kube-system
+#       ignore_errors: yes
+
+
+
+
