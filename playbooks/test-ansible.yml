@@ -1,8 +1,0 @@
----
-- name: Run ping module on all hosts
-  hosts: all
-  gather_facts: no
-
-  tasks:
-    - name: Ping all hosts (equivalent to 'ansible all -m ping')
-      ansible.builtin.ping:
